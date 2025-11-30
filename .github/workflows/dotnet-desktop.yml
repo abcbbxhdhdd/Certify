@@ -1,0 +1,56 @@
+name: Build .NET Framework Solution
+
+# 1. Trigger Configuration: Allows the workflow to be run manually from the GitHub Actions tab.
+on:
+  workflow_dispatch:
+    inputs:
+      configuration:
+        description: 'Build Configuration'
+        required: true
+        default: 'Release'
+        type: choice
+        options:
+          - Debug
+          - Release
+
+jobs:
+  build:
+    # 2. Runner Selection: MUST use a Windows runner for full .NET Framework projects (like 4.7.2).
+    runs-on: windows-latest
+
+    env:
+      # Define the name of your solution file (Adjust this if your .sln file is named differently)
+      SOLUTION_FILE: Certify.sln 
+      # Set the build configuration from the user input, defaulting to Release
+      BUILD_CONFIG: 'Release'
+
+    steps:
+      # Step 1: Checkout the repository code
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # Step 2: Set up the correct version of MSBuild and Visual Studio
+      # This action installs the necessary tools (MSBuild) on the Windows runner.
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      # Step 3: Restore NuGet dependencies
+      # We use 'nuget restore' because this is an older .NET Framework project.
+      - name: Restore NuGet Packages
+        run: nuget restore ${{ env.SOLUTION_FILE }}
+
+      # Step 4: Build the Solution file
+      # This uses msbuild.exe, which is required for full .NET Framework builds.
+      - name: Build Solution
+        run: |
+          msbuild.exe ${{ env.SOLUTION_FILE }} /p:Configuration=${{ env.BUILD_CONFIG }} /p:Platform="Any CPU" /t:Build
+
+      # Step 5: Upload the compiled files (the 'Artifact')
+      # This gathers the compiled DLLs/EXEs from the build output directory and zips them up.
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.BUILD_CONFIG }}-Build-Output
+          # The path where MSBuild typically places the final executables/libraries
+          path: .\bin\${{ env.BUILD_CONFIG }}\
+          retention-days: 7
