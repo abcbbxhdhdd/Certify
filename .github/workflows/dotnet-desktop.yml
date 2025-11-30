@@ -52,5 +52,5 @@ jobs:
         with:
           name: ${{ env.BUILD_CONFIG }}-Build-Output
           # The path where MSBuild typically places the final executables/libraries
-          path: .\bin\${{ env.BUILD_CONFIG }}\
+          path: Certify/bin/Release/Certify.exe
           retention-days: 7
